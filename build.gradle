@@ -1,0 +1,117 @@
+buildscript {
+	repositories {
+		mavenCentral()
+		maven {
+			name = "forge"
+			url = "http://files.minecraftforge.net/maven"
+		}
+		maven {
+			name = "sonatype"
+			url = "https://oss.sonatype.org/content/repositories/snapshots/"
+		}
+	}
+	dependencies {
+		classpath 'net.minecraftforge.gradle:ForgeGradle:2.3-SNAPSHOT'
+	}
+}
+
+apply plugin: 'net.minecraftforge.gradle.forge'
+
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
+
+file "build.properties" withReader {
+	def prop = new Properties()
+	prop.load(it)
+	ext.config = new ConfigSlurper().parse prop
+}
+
+version = "${config.minecraft.version}-${config.dsyt.version}"
+group = "vexatos.dsyt" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
+archivesBaseName = "DontStubYourToe"
+
+if (JavaVersion.current().isJava8Compatible()) {
+	allprojects {
+		tasks.withType(Javadoc) {
+			options.addStringOption('Xdoclint:none', '-quiet')
+		}
+	}
+}
+
+configurations {
+	provided
+	embedded
+	compile.extendsFrom provided, embedded
+}
+
+dependencies {
+}
+
+minecraft {
+	version = "${config.minecraft.version}-${config.forge.version}"
+	runDir = "eclipse"
+	mappings = config.mappings
+
+	replaceIn "vexatos/dsyt/Dsyt.java"
+	replace "@VERSION@", "${config.dsyt.version}"
+}
+
+/*sourceSets {
+	main {
+		//output.resourcesDir = 'build/classes/main'
+	}
+}*/
+
+//apply plugin: 'idea'
+idea {
+	module {
+		//scopes.PROVIDED.plus += [configurations.provided]
+		outputDir = file('build/classes/main')
+	}
+}
+
+processResources
+	{
+		inputs.property "version", project.version
+		inputs.property "mcversion", project.minecraft.version
+		// replace stuff in mcmod.info, nothing else
+		from(sourceSets.main.resources.srcDirs) {
+			include 'mcmod.info'
+
+			// replace version and mcversion
+			expand 'version': config.dsyt.version, 'mcversion': project.minecraft.version, "forgeversion": config.forge.version
+		}
+
+		// copy everything else, thats not the mcmod.info
+		from(sourceSets.main.resources.srcDirs) {
+			exclude 'mcmod.info'
+		}
+	}
+
+//For Building
+
+def libDir = './build/libs'
+
+task deobfJar(type: Jar) {
+	description = 'Creates a jar file containing the non-obfuscated class files'
+	classifier = 'deobf'
+	destinationDir = file(libDir)
+	from sourceSets.main.output.classesDir
+}
+
+task apiZip(type: Zip) {
+	description = 'Creates a zip file containing the API source files only'
+	classifier = 'api'
+	destinationDir = file(libDir)
+	from sourceSets.main.allSource
+	include 'vexatos/dsyt/api/**'
+}
+
+task makeJars << {
+	description = 'Creates the mod files'
+}
+
+makeJars.dependsOn clean, build, deobfJar, apiZip
+build.shouldRunAfter clean
+deobfJar.shouldRunAfter build
+apiZip.shouldRunAfter deobfJar

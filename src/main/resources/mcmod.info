@@ -1,0 +1,18 @@
+[
+{
+  "modid": "dsyt",
+  "name": "Don't stub your toe!",
+  "description": "Makes you autojump while sprinting.",
+  "version": "${version}",
+  "credits": "The 20000x20000 matrix which I calculated the inverse of today.",
+  "logoFile": "",
+  "mcversion": "${mcversion}",
+  "url": "If you stub your toe, all is over. There is no cure.",
+  "updateUrl": "",
+  "authorList": [ "Vexatos" ],
+  "parent":"",
+  "screenshots": [],
+  "requiredMods": ["forge@[${forgeversion},)"],
+  "dependencies": []
+}
+]
