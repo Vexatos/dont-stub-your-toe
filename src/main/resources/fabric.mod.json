@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "id": "dsyt",
+  "version": "${version}",
+
+  "name": "Don't stub your toe!",
+  "description": "Makes you autojump while sprinting.\\nCredits go to the 20000x20000 matrix which I calculated the inverse of today.",
+  "authors": [
+    "Vexatos"
+  ],
+  "contact": {
+    "homepage": "https://minecraft.curseforge.com/projects/dont-stub-your-toe",
+    "issues":"https://github.com/Vexatos/dont-stub-your-toe/issues",
+    "sources": "https://github.com/Vexatos/dont-stub-your-toe"
+  },
+
+  "license": "MIT",
+  "icon": "assets/dsyt/icon.png",
+
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "vexatos.dsyt.Dsyt"
+    ]
+  },
+
+  "requires": {
+    "fabricloader": ">=0.4.0",
+    "fabric": "*"
+  },
+  "suggests": {
+    "flamingo": "*"
+  },
+
+  "custom": {
+    "modmenu:clientsideOnly": true
+  }
+}
