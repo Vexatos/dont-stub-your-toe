@@ -11,11 +11,12 @@ buildscript {
 		}
 	}
 	dependencies {
-		classpath 'net.minecraftforge.gradle:ForgeGradle:2.3-SNAPSHOT'
+		classpath group: "net.minecraftforge.gradle", name: "ForgeGradle", version: "3.+", changing: true
 	}
 }
 
-apply plugin: 'net.minecraftforge.gradle.forge'
+apply plugin: 'idea'
+apply plugin: "net.minecraftforge.gradle"
 
 sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
@@ -45,15 +46,46 @@ configurations {
 }
 
 dependencies {
+	minecraft([
+			group  : "net.minecraftforge",
+			name   : "forge",
+			version: "${config.minecraft.version}-${config.forge.version}"
+	])
 }
 
 minecraft {
-	version = "${config.minecraft.version}-${config.forge.version}"
-	runDir = "eclipse"
-	mappings = config.mappings
+	mappings channel: "snapshot", version: config.mappings
 
-	replaceIn "vexatos/dsyt/Dsyt.java"
-	replace "@VERSION@", "${config.dsyt.version}"
+	runs {
+		client {
+			property 'forge.logging.console.level', 'debug'
+			workingDirectory project.file('eclipse')
+			mods {
+				dsyt {
+					source sourceSets.main
+				}
+			}
+		}
+		server {
+			property 'forge.logging.console.level', 'debug'
+			workingDirectory project.file('eclipse')
+			mods {
+				dsyt {
+					source sourceSets.main
+				}
+			}
+		}
+		data {
+			property 'forge.logging.console.level', 'debug'
+			workingDirectory project.file('eclipse')
+			args '--mod', 'dsyt', '--all', '--output', file('src/generated/resources/')
+			mods {
+				dsyt {
+					source sourceSets.main
+				}
+			}
+		}
+	}
 }
 
 /*sourceSets {
@@ -62,31 +94,30 @@ minecraft {
 	}
 }*/
 
-//apply plugin: 'idea'
 idea {
 	module {
-		//scopes.PROVIDED.plus += [configurations.provided]
-		outputDir = file('build/classes/main')
+		for (String excludeDirName in ["eclipse", "run", "out", "logs", "gradle"]) {
+			File excludeDir = new File(projectDir, excludeDirName)
+			excludeDirs.add(excludeDir)
+		}
 	}
 }
 
-processResources
-	{
-		inputs.property "version", project.version
-		inputs.property "mcversion", project.minecraft.version
-		// replace stuff in mcmod.info, nothing else
-		from(sourceSets.main.resources.srcDirs) {
-			include 'mcmod.info'
-
-			// replace version and mcversion
-			expand 'version': config.dsyt.version, 'mcversion': project.minecraft.version, "forgeversion": config.forge.version
-		}
-
-		// copy everything else, thats not the mcmod.info
-		from(sourceSets.main.resources.srcDirs) {
-			exclude 'mcmod.info'
-		}
+task replaceResources(type: Copy) {
+	outputs.upToDateWhen { false }
+	from(sourceSets.main.resources.srcDirs) {
+		include "META-INF/mods.toml"
+		expand 'version': version, 'mc_version': config.minecraft.version_range, 'forge_version': config.forge.version_range
 	}
+	into "$buildDir/resources/main/"
+}
+
+processResources {
+	from(sourceSets.main.resources.srcDirs) {
+		exclude 'META-INF/mods.toml'
+	}
+	finalizedBy replaceResources
+}
 
 //For Building
 

@@ -1,19 +1,21 @@
 package vexatos.dsyt;
 
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.common.config.Config;
-import net.minecraftforge.common.config.ConfigManager;
-import net.minecraftforge.fml.client.event.ConfigChangedEvent.OnConfigChangedEvent;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.common.ForgeConfigSpec;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.ExtensionPoint;
+import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent.ClientTickEvent;
-import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.config.ModConfig;
+import net.minecraftforge.fml.network.FMLNetworkConstants;
+import org.apache.commons.lang3.tuple.Pair;
 
-@EventBusSubscriber(Side.CLIENT)
-@Mod(modid = Dsyt.MOD_ID, name = Dsyt.MOD_NAME, version = "@VERSION@", clientSideOnly = true,
-	useMetadata = true, acceptedMinecraftVersions = "[1.12.2,)", acceptableRemoteVersions = "*")
+@EventBusSubscriber(Dist.CLIENT)
+@Mod(Dsyt.MOD_ID)
 public class Dsyt {
 
 	public static final String
@@ -22,34 +24,54 @@ public class Dsyt {
 
 	private static boolean changed = false;
 
+	public Dsyt() {
+		ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, Settings.config);
+		ModLoadingContext.get().registerExtensionPoint(ExtensionPoint.DISPLAYTEST, () -> Pair.of(() -> FMLNetworkConstants.IGNORESERVERONLY, (a, b) -> true));
+	}
+
 	@SubscribeEvent
-	public static void onClientTick(ClientTickEvent e) {
-		if(e.phase == TickEvent.Phase.START && ModConfig.enabled && Minecraft.getMinecraft().player != null) {
+	public static void onClientTick(TickEvent.ClientTickEvent e) {
+		if(e.phase == TickEvent.Phase.START && Settings.enabled && Minecraft.getInstance().player != null) {
 			if(!changed) {
-				if(!Minecraft.getMinecraft().gameSettings.autoJump && Minecraft.getMinecraft().player.isSprinting()) {
+				if(!Minecraft.getInstance().gameSettings.autoJump && Minecraft.getInstance().player.isSprinting()) {
 					changed = true;
-					Minecraft.getMinecraft().gameSettings.autoJump = true;
+					Minecraft.getInstance().gameSettings.autoJump = true;
 				}
-			} else if(!Minecraft.getMinecraft().player.isSprinting()) {
-				Minecraft.getMinecraft().gameSettings.autoJump = false;
+			} else if(!Minecraft.getInstance().player.isSprinting()) {
+				Minecraft.getInstance().gameSettings.autoJump = false;
 				changed = false;
 			}
 		}
 	}
 
 	@SubscribeEvent
-	public static void onConfigChange(OnConfigChangedEvent e) {
-		if(Dsyt.MOD_ID.equals(e.getModID())) {
-			ConfigManager.sync(Dsyt.MOD_ID, Config.Type.INSTANCE);
+	public static void onConfigChange(ModConfig.ModConfigEvent e) {
+		if(e.getConfig().getSpec() == Settings.config) {
+			Settings.update();
 		}
 	}
 
-	@Config(modid = Dsyt.MOD_ID, name = Dsyt.MOD_NAME)
-	public static class ModConfig {
+	@OnlyIn(Dist.CLIENT)
+	public static class Settings {
 
-		@Config.Name("Enable the mod")
-		@Config.Comment("Whether this mod should try to perform its sole task, which it would do with utmost diligence if this were set to 'true'.")
+		private static final ForgeConfigSpec config;
+		private static final ForgeConfigSpec.BooleanValue _enabled;
+
 		public static boolean enabled = true;
+
+		static {
+			ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
+
+			_enabled = builder
+				.comment("Whether this mod should try to perform its sole task, which it would do with utmost diligence if this were set to 'true'.")
+				.define("enabled", true);
+
+			config = builder.build();
+		}
+
+		public static void update() {
+			enabled = _enabled.get();
+		}
 
 	}
 }
